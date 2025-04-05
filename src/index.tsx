@@ -17,6 +17,35 @@ const RnXprinter = NativeModules.RnXprinter
       }
     );
 
-export function multiply(a: number, b: number): Promise<number> {
-  return RnXprinter.multiply(a, b);
+export function netConnect(ip: string): Promise<any> {
+  return RnXprinter.netConnect(ip);
+}
+
+export function printQRCode(content: string): void {
+  return RnXprinter.printQRCode(content);
+}
+
+export function printText(content: string): void {
+  return RnXprinter.printText(content);
+}
+
+export function printBarcode(data: string, codeType: number): void {
+  return RnXprinter.printBarcode(data, codeType);
+}
+
+export function printBitmap(
+  bitmapPath: string,
+  alignment: number,
+  width: number,
+  model: number
+): void {
+  return RnXprinter.printBitmap(bitmapPath, alignment, width, model);
+}
+
+export function closeConnection(): void {
+  return RnXprinter.closeConnection();
+}
+
+export function setCharSet(charSet: String): void {
+  return RnXprinter.setCharSet(charSet);
 }

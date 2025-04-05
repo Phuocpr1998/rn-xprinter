@@ -1,4 +1,4 @@
-import { multiply } from 'rn-xprinter';
+import { netConnect, printText } from 'rn-xprinter';
 import { Text, View, StyleSheet } from 'react-native';
 import { useState, useEffect } from 'react';
 
@@ -6,7 +6,13 @@ export default function App() {
   const [result, setResult] = useState<number | undefined>();
 
   useEffect(() => {
-    multiply(3, 7).then(setResult);
+    netConnect('192.168.1.103')
+      .then(() => {
+        printText('Test');
+      })
+      .catch((e) => {
+        setResult(e);
+      });
   }, []);
 
   return (
