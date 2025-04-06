@@ -1,13 +1,16 @@
 package com.rnxprinter
+
+import android.graphics.BitmapFactory
+import android.util.Base64
 import android.util.Log
 import com.facebook.react.bridge.Promise
-
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
 import net.posprinter.IDeviceConnection
 import net.posprinter.POSConnect
 import net.posprinter.POSPrinter
+
 
 class RnXprinterModule(reactContext: ReactApplicationContext) :
   ReactContextBaseJavaModule(reactContext) {
@@ -83,9 +86,11 @@ class RnXprinterModule(reactContext: ReactApplicationContext) :
   }
 
   @ReactMethod
-  private fun printBitmap(bitmapPath: String,  alignment: Int,width: Int, model: Int) {
+  private fun printBitmap(bitmapData: String,  alignment: Int,width: Int, model: Int) {
+    val decodedString: ByteArray = Base64.decode(bitmapData, Base64.DEFAULT)
+    val decodedByte = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.size)
     printer.initializePrinter()
-      .printBitmap(bitmapPath, alignment, width, model)
+      .printBitmap(decodedByte, alignment, width, model)
       .feedLine()
       .cutHalfAndFeed(1)
   }
