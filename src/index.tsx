@@ -34,12 +34,12 @@ export function printBarcode(data: string, codeType: number): void {
 }
 
 export function printBitmap(
-  bitmapPath: string,
+  bitmapData: string,
   alignment: number,
   width: number,
   model: number
 ): void {
-  return RnXprinter.printBitmap(bitmapPath, alignment, width, model);
+  return RnXprinter.printBitmap(bitmapData, alignment, width, model);
 }
 
 export function closeConnection(): void {
