@@ -101,6 +101,36 @@ Close the printer connection.
 
 ---
 
+### `printPageModelData(): void`
+
+Prints data in page mode.
+
+---
+
+### `tsplPrintTest(): void`
+
+Sends a TSPL test print command to the printer.
+
+---
+
+### `zplPrintTest(): void`
+
+Sends a ZPL test print command to the printer.
+
+---
+
+### `cpclPrintTest(): void`
+
+Sends a CPCL test print command to the printer.
+
+---
+
+### `getUsbDevices(): Promise<any>`
+
+Retrieves a list of connected USB devices.
+
+**Returns**: a Promise resolving to the list of USB devices.
+
 ## Contributing
 
 See the [contributing guide](CONTRIBUTING.md) to learn how to contribute to the repository and the development workflow.

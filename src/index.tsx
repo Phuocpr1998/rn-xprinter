@@ -9,13 +9,13 @@ const LINKING_ERROR =
 const RnXprinter = NativeModules.RnXprinter
   ? NativeModules.RnXprinter
   : new Proxy(
-      {},
-      {
-        get() {
-          throw new Error(LINKING_ERROR);
-        },
-      }
-    );
+    {},
+    {
+      get() {
+        throw new Error(LINKING_ERROR);
+      },
+    }
+  );
 
 export function netConnect(ip: string): Promise<any> {
   return RnXprinter.netConnect(ip);
@@ -49,3 +49,28 @@ export function closeConnection(): void {
 export function setCharSet(charSet: String): void {
   return RnXprinter.setCharSet(charSet);
 }
+
+
+export function printPageModelData(): void {
+  return RnXprinter.printPageModelData();
+}
+
+
+export function tsplPrintTest(): void {
+  return RnXprinter.tsplPrintTest();
+}
+
+
+export function zplPrintTest(): void {
+  return RnXprinter.zplPrintTest();
+}
+
+export function cpclPrintTest(): void {
+  return RnXprinter.cpclPrintTest();
+}
+
+
+export function getUsbDevices(): Promise<any> {
+  return RnXprinter.getUsbDevices();
+}
+
