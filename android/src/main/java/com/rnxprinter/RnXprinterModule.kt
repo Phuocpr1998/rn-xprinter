@@ -16,6 +16,7 @@ import net.posprinter.TSPLConst
 import net.posprinter.TSPLPrinter
 import net.posprinter.ZPLConst
 import net.posprinter.ZPLPrinter
+import net.posprinter.model.AlgorithmType
 
 class RnXprinterModule(reactContext: ReactApplicationContext) :
   ReactContextBaseJavaModule(reactContext) {
@@ -168,6 +169,17 @@ class RnXprinterModule(reactContext: ReactApplicationContext) :
     printer.initializePrinter()
       .printBarCode(data, codeType)
       .cutHalfAndFeed(1)
+  }
+
+  @ReactMethod
+  private fun tsplPrintBitmap(sWidth: Double, sHeight: Double, bitmapData: String, width: Int) {
+    val decodedString: ByteArray = Base64.decode(bitmapData, Base64.DEFAULT)
+    val bitmap = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.size)
+    tsplPrinter.sizeMm(sWidth, sHeight)
+      .gapMm(2.0, 0.0)
+      .cls()
+      .bitmapCompression(0, 0, TSPLConst.BMP_MODE_OVERWRITE_C, width, bitmap, AlgorithmType.Threshold)
+      .print(1)
   }
 
   @ReactMethod

@@ -42,6 +42,10 @@ export function printBitmap(
   return RnXprinter.printBitmap(bitmapData, alignment, width, model);
 }
 
+export function tsplPrintBitmap(sWidth: number, sHeight: number, bitmapData: String, width: number): void {
+  return RnXprinter.tsplPrintBitmap(sWidth, sHeight, bitmapData, width);
+}
+
 export function closeConnection(): void {
   return RnXprinter.closeConnection();
 }
@@ -50,16 +54,13 @@ export function setCharSet(charSet: String): void {
   return RnXprinter.setCharSet(charSet);
 }
 
-
 export function printPageModelData(): void {
   return RnXprinter.printPageModelData();
 }
 
-
 export function tsplPrintTest(): void {
   return RnXprinter.tsplPrintTest();
 }
-
 
 export function zplPrintTest(): void {
   return RnXprinter.zplPrintTest();
@@ -69,8 +70,8 @@ export function cpclPrintTest(): void {
   return RnXprinter.cpclPrintTest();
 }
 
-
 export function getUsbDevices(): Promise<any> {
   return RnXprinter.getUsbDevices();
 }
+
 
