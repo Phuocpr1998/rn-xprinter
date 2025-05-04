@@ -87,6 +87,17 @@ Prints an image from a bitmap data
 
 ---
 
+### `tsplPrintBitmap(sWidth: number, sHeight: number, bitmapData: String, width: number): void `
+
+Prints an image from a bitmap data
+
+- `sWidth`: mm
+- `sHeight`: mm
+- `bitmapData`: Base64 of image (e.g., PNG/JPG)
+- `width`: Image width in pixels
+
+---
+
 ### `setCharSet(charSet: string): void`
 
 Set the character encoding used when printing text (e.g., for UTF-8, Vietnamese, etc).
