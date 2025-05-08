@@ -178,7 +178,7 @@ class RnXprinterModule(reactContext: ReactApplicationContext) :
     tsplPrinter.sizeMm(sWidth, sHeight)
       .gapMm(2.0, 0.0)
       .cls()
-      .bitmapCompression(0, 0, TSPLConst.BMP_MODE_OVERWRITE_C, width, bitmap, AlgorithmType.Threshold)
+      .bitmap(0, 0, TSPLConst.BMP_MODE_OVERWRITE, width, bitmap, AlgorithmType.Threshold)
       .print(1)
   }
 
