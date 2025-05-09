@@ -75,3 +75,8 @@ export function getUsbDevices(): Promise<any> {
 }
 
 
+export function tsplFormFeed(sWidth: number, sHeight: number): void {
+  return RnXprinter.tsplFormFeed(sWidth, sHeight);
+}
+
+

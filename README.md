@@ -1,150 +1,135 @@
-# rn-xprinter
+# React Native XPrinter
 
-React Native SDK for connecting and printing with **XPrinter** devices over a network.
-
-## Features
-
-- Connect to XPrinter via IP
-- Print text, QR codes, barcodes, and bitmap images
-- Customize alignment, width, model
-- Set character set for text encoding
-- Close printer connection
+A React Native module for XPrinter devices that provides various printing capabilities including text, QR codes, barcodes, and bitmap printing.
 
 ## Installation
 
-```sh
+```bash
 npm install rn-xprinter
+# or
+yarn add rn-xprinter
 ```
+
+### iOS Setup
+```bash
+cd ios && pod install
+```
+
+## Features
+
+- Network printer connection
+- USB device detection
+- Text printing
+- QR Code printing
+- Barcode printing
+- Bitmap printing
+- Character set configuration
+- Multiple printer language support (TSPL, ZPL, CPCL)
 
 ## Usage
 
-```js
-import {
-  netConnect,
-  printText,
-  printQRCode,
-  printBarcode,
-  printBitmap,
-  closeConnection,
-  setCharSet,
-} from 'rn-xprinter';
+### Connect to Printer
 
-await netConnect('192.168.0.100'); // connect to printer
+```typescript
+import { netConnect, getUsbDevices } from 'rn-xprinter';
 
-printText('Hello, printer!');
-printQRCode('https://example.com');
-printBarcode('123456789012', 73); // e.g., 73 for CODE128
-printBitmap('base64 of bitmap', 1, 300, 0); // center aligned bitmap
-setCharSet('UTF-8'); // optional charset setting
+// Connect to network printer
+await netConnect('192.168.1.100');
 
-closeConnection(); // close printer connection
+// Get USB devices
+const devices = await getUsbDevices();
 ```
 
-## API
+### Print Text
 
-### `netConnect(ip: string): Promise<any>`
+```typescript
+import { printText, setCharSet } from 'rn-xprinter';
 
-Connect to the printer over the network.
+// Set character set (optional)
+setCharSet('UTF-8');
 
-- `ip`: IP address of the XPrinter device  
-**Returns**: a Promise resolving when connected
+// Print text
+printText('Hello World!');
+```
 
----
+### Print QR Code
 
-### `printText(content: string): void`
+```typescript
+import { printQRCode } from 'rn-xprinter';
 
-Prints plain text.
+printQRCode('https://example.com');
+```
 
-- `content`: The string content to print
+### Print Barcode
 
----
+```typescript
+import { printBarcode } from 'rn-xprinter';
 
-### `printQRCode(content: string): void`
+// Print barcode with specified code type
+printBarcode('123456789', 0); // 0 is the code type
+```
 
-Prints a QR Code.
+### Print Bitmap
 
-- `content`: The content encoded into the QR Code
+```typescript
+import { printBitmap, tsplPrintBitmap } from 'rn-xprinter';
 
----
+// Print bitmap with alignment and width
+printBitmap(bitmapData, 0, 384, 0);
 
-### `printBarcode(data: string, codeType: number): void`
+// TSPL bitmap printing
+tsplPrintBitmap(384, 200, bitmapData, 384);
+```
 
-Prints a 1D barcode.
+### Printer Language Tests
 
-- `data`: The barcode data string
-- `codeType`: Integer type of barcode (e.g., 65 for UPC-A, 73 for CODE128)
+```typescript
+import { tsplPrintTest, zplPrintTest, cpclPrintTest } from 'rn-xprinter';
 
----
+// Test different printer languages
+tsplPrintTest();
+zplPrintTest();
+cpclPrintTest();
+```
 
-### `printBitmap(bitmapData: string, alignment: number, width: number, model: number): void`
+### Close Connection
 
-Prints an image from a bitmap data
+```typescript
+import { closeConnection } from 'rn-xprinter';
 
-- `bitmapData`: Base64 of image (e.g., PNG/JPG)
-- `alignment`: 0 = left, 1 = center, 2 = right
-- `width`: Image width in pixels
-- `model`: Reserved or mode selector (printer-specific)
+closeConnection();
+```
 
----
+## API Reference
 
-### `tsplPrintBitmap(sWidth: number, sHeight: number, bitmapData: String, width: number): void `
+### Connection Methods
+- `netConnect(ip: string): Promise<any>` - Connect to network printer
+- `getUsbDevices(): Promise<any>` - Get list of USB devices
+- `closeConnection(): void` - Close printer connection
 
-Prints an image from a bitmap data
+### Printing Methods
+- `printText(content: string): void` - Print text
+- `printQRCode(content: string): void` - Print QR code
+- `printBarcode(data: string, codeType: number): void` - Print barcode
+- `printBitmap(bitmapData: string, alignment: number, width: number, model: number): void` - Print bitmap
+- `tsplPrintBitmap(sWidth: number, sHeight: number, bitmapData: String, width: number): void` - TSPL bitmap printing
+- `tsplFormFeed(sWidth: number, sHeight: number): void` - Form feed for TSPL printer with specified width and height
 
-- `sWidth`: mm
-- `sHeight`: mm
-- `bitmapData`: Base64 of image (e.g., PNG/JPG)
-- `width`: Image width in pixels
+### Configuration Methods
+- `setCharSet(charSet: String): void` - Set character set
+- `printPageModelData(): void` - Print page model data
 
----
+### Test Methods
+- `tsplPrintTest(): void` - Test TSPL printing
+- `zplPrintTest(): void` - Test ZPL printing
+- `cpclPrintTest(): void` - Test CPCL printing
 
-### `setCharSet(charSet: string): void`
+## Error Handling
 
-Set the character encoding used when printing text (e.g., for UTF-8, Vietnamese, etc).
-
-- `charSet`: Character set string (e.g., `"UTF-8"`, `"GBK"`)
-
----
-
-### `closeConnection(): void`
-
-Close the printer connection.
-
----
-
-### `printPageModelData(): void`
-
-Prints data in page mode.
-
----
-
-### `tsplPrintTest(): void`
-
-Sends a TSPL test print command to the printer.
-
----
-
-### `zplPrintTest(): void`
-
-Sends a ZPL test print command to the printer.
-
----
-
-### `cpclPrintTest(): void`
-
-Sends a CPCL test print command to the printer.
-
----
-
-### `getUsbDevices(): Promise<any>`
-
-Retrieves a list of connected USB devices.
-
-**Returns**: a Promise resolving to the list of USB devices.
-
-## Contributing
-
-See the [contributing guide](CONTRIBUTING.md) to learn how to contribute to the repository and the development workflow.
+The module will throw an error if it's not properly linked. Make sure to:
+- Run `pod install` for iOS
+- Rebuild the app after installing the package
+- Not use Expo Go
 
 ## License
 

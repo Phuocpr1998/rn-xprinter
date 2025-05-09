@@ -183,6 +183,12 @@ class RnXprinterModule(reactContext: ReactApplicationContext) :
   }
 
   @ReactMethod
+  private fun tsplFormFeed(sWidth: Double, sHeight: Double) {
+    tsplPrinter.sizeMm(sWidth, sHeight)
+      .formFeed()
+  }
+
+  @ReactMethod
   private fun printBitmap(bitmapData: String,  alignment: Int,width: Int, model: Int) {
     val decodedString: ByteArray = Base64.decode(bitmapData, Base64.DEFAULT)
     val decodedByte = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.size)
