@@ -114,7 +114,7 @@ export async function getUsbDevices(): Promise<any> {
   return RnXprinter.getUsbDevices();
 }
 
-export async function getSerialDevices(): Promise<string> {
+export async function getSerialDevices(): Promise<any> {
   return RnXprinter.getSerialDevices();
 }
 
