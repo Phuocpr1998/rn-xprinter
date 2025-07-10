@@ -21,6 +21,14 @@ export function netConnect(ip: string): Promise<any> {
   return RnXprinter.netConnect(ip);
 }
 
+export function serialConnect(serialPort: string): Promise<any> {
+  return RnXprinter.serialConnect(serialPort);
+}
+
+export function usbConnect(device: string): Promise<any> {
+  return RnXprinter.usbConnect(device);
+}
+
 export function printQRCode(content: string): void {
   return RnXprinter.printQRCode(content);
 }
@@ -72,6 +80,10 @@ export function cpclPrintTest(): void {
 
 export function getUsbDevices(): Promise<any> {
   return RnXprinter.getUsbDevices();
+}
+
+export function getSerialDevices(): Promise<String> {
+  return RnXprinter.getSerialDevices();
 }
 
 

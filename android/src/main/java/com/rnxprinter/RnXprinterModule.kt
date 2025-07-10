@@ -30,9 +30,111 @@ class RnXprinterModule(reactContext: ReactApplicationContext) :
 
   @ReactMethod
   fun getUsbDevices(promise: Promise) {
-    val listDevice = POSConnect.getUsbDevices(reactApplicationContext)
+    val listDevice = POSConnect.getUsbDevice(reactApplicationContext)
     promise.resolve(listDevice)
   }
+
+  @ReactMethod
+  fun getSerialDevices(promise: Promise) {
+    val listSerial = POSConnect.getSerialPort()
+    promise.resolve(listSerial)
+  }
+
+  @ReactMethod
+  fun serialConnect(serialPort: String, promise: Promise) {
+    curConnect?.close()
+    try {
+      curConnect = POSConnect.createDevice(POSConnect.DEVICE_TYPE_SERIAL)
+      curConnect!!.connect(serialPort) { code, connInfo, msg ->
+        when (code) {
+          POSConnect.CONNECT_SUCCESS -> {
+            printer = POSPrinter(curConnect)
+            cpclPrinter = CPCLPrinter(curConnect)
+            zplPrinter = ZPLPrinter(curConnect)
+            tsplPrinter= TSPLPrinter(curConnect)
+            promise.resolve(connInfo)
+          }
+
+          POSConnect.CONNECT_FAIL -> {
+            Log.e("XPrinterModule", "connectListener.CONNECT_FAIL --> $msg")
+            promise.reject(code.toString(), msg)
+          }
+
+          POSConnect.CONNECT_INTERRUPT -> {
+            Log.e("XPrinterModule", "connectListener.CONNECT_INTERRUPT --> $msg")
+            promise.reject(code.toString(), msg)
+          }
+
+          POSConnect.SEND_FAIL -> {
+            Log.e("XPrinterModule", "connectListener.SEND_FAIL --> $msg")
+            promise.reject(code.toString(), msg)
+          }
+
+          POSConnect.USB_DETACHED -> {
+            Log.e("XPrinterModule", "connectListener.USB_DETACHED --> $msg")
+            promise.reject(code.toString(), msg)
+          }
+
+          POSConnect.USB_ATTACHED -> {
+            Log.e("XPrinterModule", "connectListener.USB_DETACHED --> $msg")
+            promise.reject(code.toString(), msg)
+          }
+        }
+      }
+    }catch (ex: Exception) {
+      Log.e("XPrinterModule", "connectListener.CONNECT_FAIL --> ${ex.message}")
+      promise.reject("-1", ex.message)
+    }
+  }
+
+
+  @ReactMethod
+  fun usbConnect(device: String, promise: Promise) {
+    curConnect?.close()
+    try {
+      curConnect = POSConnect.createDevice(POSConnect.DEVICE_TYPE_USB)
+      curConnect!!.connect(device) { code, connInfo, msg ->
+        when (code) {
+          POSConnect.CONNECT_SUCCESS -> {
+            printer = POSPrinter(curConnect)
+            cpclPrinter = CPCLPrinter(curConnect)
+            zplPrinter = ZPLPrinter(curConnect)
+            tsplPrinter= TSPLPrinter(curConnect)
+            promise.resolve(connInfo)
+          }
+
+          POSConnect.CONNECT_FAIL -> {
+            Log.e("XPrinterModule", "connectListener.CONNECT_FAIL --> $msg")
+            promise.reject(code.toString(), msg)
+          }
+
+          POSConnect.CONNECT_INTERRUPT -> {
+            Log.e("XPrinterModule", "connectListener.CONNECT_INTERRUPT --> $msg")
+            promise.reject(code.toString(), msg)
+          }
+
+          POSConnect.SEND_FAIL -> {
+            Log.e("XPrinterModule", "connectListener.SEND_FAIL --> $msg")
+            promise.reject(code.toString(), msg)
+          }
+
+          POSConnect.USB_DETACHED -> {
+            Log.e("XPrinterModule", "connectListener.USB_DETACHED --> $msg")
+            promise.reject(code.toString(), msg)
+          }
+
+          POSConnect.USB_ATTACHED -> {
+            Log.e("XPrinterModule", "connectListener.USB_DETACHED --> $msg")
+            promise.reject(code.toString(), msg)
+          }
+        }
+      }
+    }catch (ex: Exception) {
+      Log.e("XPrinterModule", "connectListener.CONNECT_FAIL --> ${ex.message}")
+      promise.reject("-1", ex.message)
+    }
+  }
+
 
   @ReactMethod
   fun netConnect(ip: String, promise: Promise) {
