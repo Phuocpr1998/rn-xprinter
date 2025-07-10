@@ -17,16 +17,46 @@ import net.posprinter.TSPLPrinter
 import net.posprinter.ZPLConst
 import net.posprinter.ZPLPrinter
 import net.posprinter.model.AlgorithmType
+import java.util.concurrent.ConcurrentHashMap
+
+data class PrinterInstance(
+  var connection: IDeviceConnection? = null,
+  var posPrinter: POSPrinter? = null,
+  var cpclPrinter: CPCLPrinter? = null,
+  var zplPrinter: ZPLPrinter? = null,
+  var tsplPrinter: TSPLPrinter? = null
+)
 
 class RnXprinterModule(reactContext: ReactApplicationContext) :
   ReactContextBaseJavaModule(reactContext) {
-  private lateinit var printer : POSPrinter
-  private lateinit var cpclPrinter : CPCLPrinter
-  private lateinit var zplPrinter : ZPLPrinter
-  private lateinit var tsplPrinter : TSPLPrinter
+  
+  // Store instances by instance ID
+  private val instances = ConcurrentHashMap<String, PrinterInstance>()
 
-  private var curConnect: IDeviceConnection? = null
+  // For backward compatibility with legacy calls
+  private val legacyInstance = PrinterInstance()
 
+  @ReactMethod
+  fun createInstance(instanceId: String) {
+    instances[instanceId] = PrinterInstance()
+    Log.d("XPrinterModule", "Created instance: $instanceId")
+  }
+
+  @ReactMethod
+  fun destroyInstance(instanceId: String) {
+    val instance = instances[instanceId]
+    instance?.connection?.close()
+    instances.remove(instanceId)
+    Log.d("XPrinterModule", "Destroyed instance: $instanceId")
+  }
+
+  private fun getInstance(instanceId: String): PrinterInstance {
+    return if (instanceId == "legacy") {
+      legacyInstance
+    } else {
+      instances[instanceId] ?: throw Exception("Instance $instanceId not found. Call createInstance first.")
+    }
+  }
 
   @ReactMethod
   fun getUsbDevices(promise: Promise) {
@@ -41,17 +71,19 @@ class RnXprinterModule(reactContext: ReactApplicationContext) :
   }
 
   @ReactMethod
-  fun serialConnect(serialPort: String, promise: Promise) {
-    curConnect?.close()
+  fun serialConnect(instanceId: String, serialPort: String, promise: Promise) {
+    val instance = getInstance(instanceId)
+    instance.connection?.close()
+    
     try {
-      curConnect = POSConnect.createDevice(POSConnect.DEVICE_TYPE_SERIAL)
-      curConnect!!.connect(serialPort) { code, connInfo, msg ->
+      instance.connection = POSConnect.createDevice(POSConnect.DEVICE_TYPE_SERIAL)
+      instance.connection!!.connect(serialPort) { code, connInfo, msg ->
         when (code) {
           POSConnect.CONNECT_SUCCESS -> {
-            printer = POSPrinter(curConnect)
-            cpclPrinter = CPCLPrinter(curConnect)
-            zplPrinter = ZPLPrinter(curConnect)
-            tsplPrinter= TSPLPrinter(curConnect)
+            instance.posPrinter = POSPrinter(instance.connection)
+            instance.cpclPrinter = CPCLPrinter(instance.connection)
+            instance.zplPrinter = ZPLPrinter(instance.connection)
+            instance.tsplPrinter = TSPLPrinter(instance.connection)
             promise.resolve(connInfo)
           }
 
@@ -76,30 +108,31 @@ class RnXprinterModule(reactContext: ReactApplicationContext) :
           }
 
           POSConnect.USB_ATTACHED -> {
-            Log.e("XPrinterModule", "connectListener.USB_DETACHED --> $msg")
+            Log.e("XPrinterModule", "connectListener.USB_ATTACHED --> $msg")
             promise.reject(code.toString(), msg)
           }
         }
       }
-    }catch (ex: Exception) {
-      Log.e("XPrinterModule", "connectListener.CONNECT_FAIL --> ${ex.message}")
+    } catch (ex: Exception) {
+      Log.e("XPrinterModule", "serialConnect failed --> ${ex.message}")
       promise.reject("-1", ex.message)
     }
   }
 
-
   @ReactMethod
-  fun usbConnect(device: String, promise: Promise) {
-    curConnect?.close()
+  fun usbConnect(instanceId: String, device: String, promise: Promise) {
+    val instance = getInstance(instanceId)
+    instance.connection?.close()
+    
     try {
-      curConnect = POSConnect.createDevice(POSConnect.DEVICE_TYPE_USB)
-      curConnect!!.connect(device) { code, connInfo, msg ->
+      instance.connection = POSConnect.createDevice(POSConnect.DEVICE_TYPE_USB)
+      instance.connection!!.connect(device) { code, connInfo, msg ->
         when (code) {
           POSConnect.CONNECT_SUCCESS -> {
-            printer = POSPrinter(curConnect)
-            cpclPrinter = CPCLPrinter(curConnect)
-            zplPrinter = ZPLPrinter(curConnect)
-            tsplPrinter= TSPLPrinter(curConnect)
+            instance.posPrinter = POSPrinter(instance.connection)
+            instance.cpclPrinter = CPCLPrinter(instance.connection)
+            instance.zplPrinter = ZPLPrinter(instance.connection)
+            instance.tsplPrinter = TSPLPrinter(instance.connection)
             promise.resolve(connInfo)
           }
 
@@ -124,30 +157,31 @@ class RnXprinterModule(reactContext: ReactApplicationContext) :
           }
 
           POSConnect.USB_ATTACHED -> {
-            Log.e("XPrinterModule", "connectListener.USB_DETACHED --> $msg")
+            Log.e("XPrinterModule", "connectListener.USB_ATTACHED --> $msg")
             promise.reject(code.toString(), msg)
           }
         }
       }
-    }catch (ex: Exception) {
-      Log.e("XPrinterModule", "connectListener.CONNECT_FAIL --> ${ex.message}")
+    } catch (ex: Exception) {
+      Log.e("XPrinterModule", "usbConnect failed --> ${ex.message}")
       promise.reject("-1", ex.message)
     }
   }
 
-
   @ReactMethod
-  fun netConnect(ip: String, promise: Promise) {
-    curConnect?.close()
+  fun netConnect(instanceId: String, ip: String, promise: Promise) {
+    val instance = getInstance(instanceId)
+    instance.connection?.close()
+    
     try {
-      curConnect = POSConnect.createDevice(POSConnect.DEVICE_TYPE_ETHERNET)
-      curConnect!!.connect(ip) { code, connInfo, msg ->
+      instance.connection = POSConnect.createDevice(POSConnect.DEVICE_TYPE_ETHERNET)
+      instance.connection!!.connect(ip) { code, connInfo, msg ->
         when (code) {
           POSConnect.CONNECT_SUCCESS -> {
-            printer = POSPrinter(curConnect)
-            cpclPrinter = CPCLPrinter(curConnect)
-            zplPrinter = ZPLPrinter(curConnect)
-            tsplPrinter= TSPLPrinter(curConnect)
+            instance.posPrinter = POSPrinter(instance.connection)
+            instance.cpclPrinter = CPCLPrinter(instance.connection)
+            instance.zplPrinter = ZPLPrinter(instance.connection)
+            instance.tsplPrinter = TSPLPrinter(instance.connection)
             promise.resolve(connInfo)
           }
 
@@ -172,19 +206,22 @@ class RnXprinterModule(reactContext: ReactApplicationContext) :
           }
 
           POSConnect.USB_ATTACHED -> {
-            Log.e("XPrinterModule", "connectListener.USB_DETACHED --> $msg")
+            Log.e("XPrinterModule", "connectListener.USB_ATTACHED --> $msg")
             promise.reject(code.toString(), msg)
           }
         }
       }
-    }catch (ex: Exception) {
-      Log.e("XPrinterModule", "connectListener.CONNECT_FAIL --> ${ex.message}")
+    } catch (ex: Exception) {
+      Log.e("XPrinterModule", "netConnect failed --> ${ex.message}")
       promise.reject("-1", ex.message)
     }
   }
 
   @ReactMethod
-  fun printQRCode(content: String) {
+  fun printQRCode(instanceId: String, content: String) {
+    val instance = getInstance(instanceId)
+    val printer = instance.posPrinter ?: throw Exception("No printer connection for instance $instanceId")
+    
     printer.initializePrinter()
       .printQRCode(content)
       .feedLine()
@@ -192,14 +229,20 @@ class RnXprinterModule(reactContext: ReactApplicationContext) :
   }
 
   @ReactMethod
-  fun printText(content: String) {
+  fun printText(instanceId: String, content: String) {
+    val instance = getInstance(instanceId)
+    val printer = instance.posPrinter ?: throw Exception("No printer connection for instance $instanceId")
+    
     printer.initializePrinter()
       .printString(content)
       .cutHalfAndFeed(1)
   }
 
   @ReactMethod
-  fun tsplPrintTest() {
+  fun tsplPrintTest(instanceId: String) {
+    val instance = getInstance(instanceId)
+    val tsplPrinter = instance.tsplPrinter ?: throw Exception("No TSPL printer connection for instance $instanceId")
+    
     tsplPrinter.sizeMm(60.0, 30.0)
       .gapInch(0.0, 0.0)
       .offsetInch(0.0)
@@ -220,17 +263,23 @@ class RnXprinterModule(reactContext: ReactApplicationContext) :
   }
 
   @ReactMethod
-  fun zplPrintTest() {
+  fun zplPrintTest(instanceId: String) {
+    val instance = getInstance(instanceId)
+    val zplPrinter = instance.zplPrinter ?: throw Exception("No ZPL printer connection for instance $instanceId")
+    
     zplPrinter.setCharSet("UTF-8")
     zplPrinter.addStart()
       .setCustomFont("LZHONGHEI.TTF", '1', ZPLConst.CODE_PAGE_UTF8)
-      .addText(0, 0, '1', 24,24, "custom Font")
-      .addText(100, 100, '1', ZPLConst.ROTATION_90, 24,24, "customFont 90")
+      .addText(0, 0, '1', 24, 24, "custom Font")
+      .addText(100, 100, '1', ZPLConst.ROTATION_90, 24, 24, "customFont 90")
       .addEnd()
   }
 
   @ReactMethod
-  fun cpclPrintTest() {
+  fun cpclPrintTest(instanceId: String) {
+    val instance = getInstance(instanceId)
+    val cpclPrinter = instance.cpclPrinter ?: throw Exception("No CPCL printer connection for instance $instanceId")
+    
     cpclPrinter.initializePrinter(800)
       .addBarcodeText()
       .addText(0, 0, "Code 128")
@@ -254,27 +303,39 @@ class RnXprinterModule(reactContext: ReactApplicationContext) :
   }
 
   @ReactMethod
-  fun printPageModelData() {
+  fun printPageModelData(instanceId: String) {
+    val instance = getInstance(instanceId)
+    val printer = instance.posPrinter ?: throw Exception("No printer connection for instance $instanceId")
+    
     printer.initializePrinter()
       .printPageModelData()
       .cutHalfAndFeed(1)
   }
 
   @ReactMethod
-  fun setCharSet(charSet: String) {
+  fun setCharSet(instanceId: String, charSet: String) {
+    val instance = getInstance(instanceId)
+    val printer = instance.posPrinter ?: throw Exception("No printer connection for instance $instanceId")
+    
     printer.initializePrinter()
       .setCharSet(charSet)
   }
 
   @ReactMethod
-  private fun printBarcode(data: String, codeType: Int) {
+  fun printBarcode(instanceId: String, data: String, codeType: Int) {
+    val instance = getInstance(instanceId)
+    val printer = instance.posPrinter ?: throw Exception("No printer connection for instance $instanceId")
+    
     printer.initializePrinter()
       .printBarCode(data, codeType)
       .cutHalfAndFeed(1)
   }
 
   @ReactMethod
-  private fun tsplPrintBitmap(sWidth: Double, sHeight: Double, bitmapData: String, width: Int) {
+  fun tsplPrintBitmap(instanceId: String, sWidth: Double, sHeight: Double, bitmapData: String, width: Int) {
+    val instance = getInstance(instanceId)
+    val tsplPrinter = instance.tsplPrinter ?: throw Exception("No TSPL printer connection for instance $instanceId")
+    
     val decodedString: ByteArray = Base64.decode(bitmapData, Base64.DEFAULT)
     val bitmap = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.size)
     tsplPrinter.sizeMm(sWidth, sHeight)
@@ -285,13 +346,19 @@ class RnXprinterModule(reactContext: ReactApplicationContext) :
   }
 
   @ReactMethod
-  private fun tsplFormFeed(sWidth: Double, sHeight: Double) {
+  fun tsplFormFeed(instanceId: String, sWidth: Double, sHeight: Double) {
+    val instance = getInstance(instanceId)
+    val tsplPrinter = instance.tsplPrinter ?: throw Exception("No TSPL printer connection for instance $instanceId")
+    
     tsplPrinter.sizeMm(sWidth, sHeight)
       .formFeed()
   }
 
   @ReactMethod
-  private fun printBitmap(bitmapData: String,  alignment: Int,width: Int, model: Int) {
+  fun printBitmap(instanceId: String, bitmapData: String, alignment: Int, width: Int, model: Int) {
+    val instance = getInstance(instanceId)
+    val printer = instance.posPrinter ?: throw Exception("No printer connection for instance $instanceId")
+    
     val decodedString: ByteArray = Base64.decode(bitmapData, Base64.DEFAULT)
     val decodedByte = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.size)
     printer.initializePrinter()
@@ -301,8 +368,14 @@ class RnXprinterModule(reactContext: ReactApplicationContext) :
   }
 
   @ReactMethod
-  private fun closeConnection() {
-    curConnect?.close()
+  fun closeConnection(instanceId: String) {
+    val instance = getInstance(instanceId)
+    instance.connection?.close()
+    instance.connection = null
+    instance.posPrinter = null
+    instance.cpclPrinter = null
+    instance.zplPrinter = null
+    instance.tsplPrinter = null
   }
 
   override fun getName(): String {
