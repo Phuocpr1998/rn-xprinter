@@ -73,7 +73,9 @@ class RnXprinterModule(reactContext: ReactApplicationContext) :
             is String -> writableArray.pushString(device)
             is Map<*, *> -> {
               val deviceMap = Arguments.createMap()
-              for ((key, value) in device) {
+              device.forEach { entry ->
+                val key = entry.key
+                val value = entry.value
                 when (value) {
                   is String -> deviceMap.putString(key.toString(), value)
                   is Int -> deviceMap.putInt(key.toString(), value)
@@ -108,7 +110,9 @@ class RnXprinterModule(reactContext: ReactApplicationContext) :
             is String -> writableArray.pushString(device)
             is Map<*, *> -> {
               val deviceMap = Arguments.createMap()
-              for ((key, value) in device) {
+              device.forEach { entry ->
+                val key = entry.key
+                val value = entry.value
                 when (value) {
                   is String -> deviceMap.putString(key.toString(), value)
                   is Int -> deviceMap.putInt(key.toString(), value)
