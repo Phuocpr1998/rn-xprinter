@@ -7,6 +7,9 @@ import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
+import com.facebook.react.bridge.WritableArray
+import com.facebook.react.bridge.WritableMap
+import com.facebook.react.bridge.Arguments
 import net.posprinter.CPCLConst
 import net.posprinter.CPCLPrinter
 import net.posprinter.IDeviceConnection
@@ -60,14 +63,72 @@ class RnXprinterModule(reactContext: ReactApplicationContext) :
 
   @ReactMethod
   fun getUsbDevices(promise: Promise) {
-    val listDevice = POSConnect.getUsbDevice(reactApplicationContext)
-    promise.resolve(listDevice)
+    try {
+      val listDevice = POSConnect.getUsbDevice(reactApplicationContext)
+      val writableArray = Arguments.createArray()
+      
+      if (listDevice != null) {
+        for (device in listDevice) {
+          when (device) {
+            is String -> writableArray.pushString(device)
+            is Map<*, *> -> {
+              val deviceMap = Arguments.createMap()
+              for ((key, value) in device) {
+                when (value) {
+                  is String -> deviceMap.putString(key.toString(), value)
+                  is Int -> deviceMap.putInt(key.toString(), value)
+                  is Double -> deviceMap.putDouble(key.toString(), value)
+                  is Boolean -> deviceMap.putBoolean(key.toString(), value)
+                  else -> deviceMap.putString(key.toString(), value.toString())
+                }
+              }
+              writableArray.pushMap(deviceMap)
+            }
+            else -> writableArray.pushString(device.toString())
+          }
+        }
+      }
+      
+      promise.resolve(writableArray)
+    } catch (ex: Exception) {
+      Log.e("XPrinterModule", "getUsbDevices failed --> ${ex.message}")
+      promise.reject("-1", ex.message)
+    }
   }
 
   @ReactMethod
   fun getSerialDevices(promise: Promise) {
-    val listSerial = POSConnect.getSerialPort()
-    promise.resolve(listSerial)
+    try {
+      val listSerial = POSConnect.getSerialPort()
+      val writableArray = Arguments.createArray()
+      
+      if (listSerial != null) {
+        for (device in listSerial) {
+          when (device) {
+            is String -> writableArray.pushString(device)
+            is Map<*, *> -> {
+              val deviceMap = Arguments.createMap()
+              for ((key, value) in device) {
+                when (value) {
+                  is String -> deviceMap.putString(key.toString(), value)
+                  is Int -> deviceMap.putInt(key.toString(), value)
+                  is Double -> deviceMap.putDouble(key.toString(), value)
+                  is Boolean -> deviceMap.putBoolean(key.toString(), value)
+                  else -> deviceMap.putString(key.toString(), value.toString())
+                }
+              }
+              writableArray.pushMap(deviceMap)
+            }
+            else -> writableArray.pushString(device.toString())
+          }
+        }
+      }
+      
+      promise.resolve(writableArray)
+    } catch (ex: Exception) {
+      Log.e("XPrinterModule", "getSerialDevices failed --> ${ex.message}")
+      promise.reject("-1", ex.message)
+    }
   }
 
   @ReactMethod
