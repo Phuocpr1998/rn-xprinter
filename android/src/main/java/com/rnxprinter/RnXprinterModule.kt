@@ -32,7 +32,7 @@ data class PrinterInstance(
 
 class RnXprinterModule(reactContext: ReactApplicationContext) :
   ReactContextBaseJavaModule(reactContext) {
-  
+
   // Store instances by instance ID
   private val instances = ConcurrentHashMap<String, PrinterInstance>()
 
@@ -66,31 +66,13 @@ class RnXprinterModule(reactContext: ReactApplicationContext) :
     try {
       val listDevice = POSConnect.getUsbDevice(reactApplicationContext)
       val writableArray = Arguments.createArray()
-      
+
       if (listDevice != null) {
         for (device in listDevice) {
-          when (device) {
-            is String -> writableArray.pushString(device)
-            is Map<*, *> -> {
-              val deviceMap = Arguments.createMap()
-              device.forEach { entry ->
-                val key = entry.key
-                val value = entry.value
-                when (value) {
-                  is String -> deviceMap.putString(key.toString(), value)
-                  is Int -> deviceMap.putInt(key.toString(), value)
-                  is Double -> deviceMap.putDouble(key.toString(), value)
-                  is Boolean -> deviceMap.putBoolean(key.toString(), value)
-                  else -> deviceMap.putString(key.toString(), value.toString())
-                }
-              }
-              writableArray.pushMap(deviceMap)
-            }
-            else -> writableArray.pushString(device.toString())
-          }
+          writableArray.pushString(device.deviceName)
         }
       }
-      
+
       promise.resolve(writableArray)
     } catch (ex: Exception) {
       Log.e("XPrinterModule", "getUsbDevices failed --> ${ex.message}")
@@ -103,31 +85,11 @@ class RnXprinterModule(reactContext: ReactApplicationContext) :
     try {
       val listSerial = POSConnect.getSerialPort()
       val writableArray = Arguments.createArray()
-      
       if (listSerial != null) {
         for (device in listSerial) {
-          when (device) {
-            is String -> writableArray.pushString(device)
-            is Map<*, *> -> {
-              val deviceMap = Arguments.createMap()
-              device.forEach { entry ->
-                val key = entry.key
-                val value = entry.value
-                when (value) {
-                  is String -> deviceMap.putString(key.toString(), value)
-                  is Int -> deviceMap.putInt(key.toString(), value)
-                  is Double -> deviceMap.putDouble(key.toString(), value)
-                  is Boolean -> deviceMap.putBoolean(key.toString(), value)
-                  else -> deviceMap.putString(key.toString(), value.toString())
-                }
-              }
-              writableArray.pushMap(deviceMap)
-            }
-            else -> writableArray.pushString(device.toString())
-          }
+          writableArray.pushString(device)
         }
       }
-      
       promise.resolve(writableArray)
     } catch (ex: Exception) {
       Log.e("XPrinterModule", "getSerialDevices failed --> ${ex.message}")
@@ -139,7 +101,7 @@ class RnXprinterModule(reactContext: ReactApplicationContext) :
   fun serialConnect(instanceId: String, serialPort: String, promise: Promise) {
     val instance = getInstance(instanceId)
     instance.connection?.close()
-    
+
     try {
       instance.connection = POSConnect.createDevice(POSConnect.DEVICE_TYPE_SERIAL)
       instance.connection!!.connect(serialPort) { code, connInfo, msg ->
@@ -188,7 +150,7 @@ class RnXprinterModule(reactContext: ReactApplicationContext) :
   fun usbConnect(instanceId: String, device: String, promise: Promise) {
     val instance = getInstance(instanceId)
     instance.connection?.close()
-    
+
     try {
       instance.connection = POSConnect.createDevice(POSConnect.DEVICE_TYPE_USB)
       instance.connection!!.connect(device) { code, connInfo, msg ->
@@ -237,7 +199,7 @@ class RnXprinterModule(reactContext: ReactApplicationContext) :
   fun netConnect(instanceId: String, ip: String, promise: Promise) {
     val instance = getInstance(instanceId)
     instance.connection?.close()
-    
+
     try {
       instance.connection = POSConnect.createDevice(POSConnect.DEVICE_TYPE_ETHERNET)
       instance.connection!!.connect(ip) { code, connInfo, msg ->
@@ -286,7 +248,7 @@ class RnXprinterModule(reactContext: ReactApplicationContext) :
   fun printQRCode(instanceId: String, content: String) {
     val instance = getInstance(instanceId)
     val printer = instance.posPrinter ?: throw Exception("No printer connection for instance $instanceId")
-    
+
     printer.initializePrinter()
       .printQRCode(content)
       .feedLine()
@@ -297,7 +259,7 @@ class RnXprinterModule(reactContext: ReactApplicationContext) :
   fun printText(instanceId: String, content: String) {
     val instance = getInstance(instanceId)
     val printer = instance.posPrinter ?: throw Exception("No printer connection for instance $instanceId")
-    
+
     printer.initializePrinter()
       .printString(content)
       .cutHalfAndFeed(1)
@@ -307,7 +269,7 @@ class RnXprinterModule(reactContext: ReactApplicationContext) :
   fun tsplPrintTest(instanceId: String) {
     val instance = getInstance(instanceId)
     val tsplPrinter = instance.tsplPrinter ?: throw Exception("No TSPL printer connection for instance $instanceId")
-    
+
     tsplPrinter.sizeMm(60.0, 30.0)
       .gapInch(0.0, 0.0)
       .offsetInch(0.0)
@@ -331,7 +293,7 @@ class RnXprinterModule(reactContext: ReactApplicationContext) :
   fun zplPrintTest(instanceId: String) {
     val instance = getInstance(instanceId)
     val zplPrinter = instance.zplPrinter ?: throw Exception("No ZPL printer connection for instance $instanceId")
-    
+
     zplPrinter.setCharSet("UTF-8")
     zplPrinter.addStart()
       .setCustomFont("LZHONGHEI.TTF", '1', ZPLConst.CODE_PAGE_UTF8)
@@ -344,7 +306,7 @@ class RnXprinterModule(reactContext: ReactApplicationContext) :
   fun cpclPrintTest(instanceId: String) {
     val instance = getInstance(instanceId)
     val cpclPrinter = instance.cpclPrinter ?: throw Exception("No CPCL printer connection for instance $instanceId")
-    
+
     cpclPrinter.initializePrinter(800)
       .addBarcodeText()
       .addText(0, 0, "Code 128")
@@ -371,7 +333,7 @@ class RnXprinterModule(reactContext: ReactApplicationContext) :
   fun printPageModelData(instanceId: String) {
     val instance = getInstance(instanceId)
     val printer = instance.posPrinter ?: throw Exception("No printer connection for instance $instanceId")
-    
+
     printer.initializePrinter()
       .printPageModelData()
       .cutHalfAndFeed(1)
@@ -381,7 +343,7 @@ class RnXprinterModule(reactContext: ReactApplicationContext) :
   fun setCharSet(instanceId: String, charSet: String) {
     val instance = getInstance(instanceId)
     val printer = instance.posPrinter ?: throw Exception("No printer connection for instance $instanceId")
-    
+
     printer.initializePrinter()
       .setCharSet(charSet)
   }
@@ -390,7 +352,7 @@ class RnXprinterModule(reactContext: ReactApplicationContext) :
   fun printBarcode(instanceId: String, data: String, codeType: Int) {
     val instance = getInstance(instanceId)
     val printer = instance.posPrinter ?: throw Exception("No printer connection for instance $instanceId")
-    
+
     printer.initializePrinter()
       .printBarCode(data, codeType)
       .cutHalfAndFeed(1)
@@ -400,7 +362,7 @@ class RnXprinterModule(reactContext: ReactApplicationContext) :
   fun tsplPrintBitmap(instanceId: String, sWidth: Double, sHeight: Double, bitmapData: String, width: Int) {
     val instance = getInstance(instanceId)
     val tsplPrinter = instance.tsplPrinter ?: throw Exception("No TSPL printer connection for instance $instanceId")
-    
+
     val decodedString: ByteArray = Base64.decode(bitmapData, Base64.DEFAULT)
     val bitmap = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.size)
     tsplPrinter.sizeMm(sWidth, sHeight)
@@ -414,7 +376,7 @@ class RnXprinterModule(reactContext: ReactApplicationContext) :
   fun tsplFormFeed(instanceId: String, sWidth: Double, sHeight: Double) {
     val instance = getInstance(instanceId)
     val tsplPrinter = instance.tsplPrinter ?: throw Exception("No TSPL printer connection for instance $instanceId")
-    
+
     tsplPrinter.sizeMm(sWidth, sHeight)
       .formFeed()
   }
@@ -423,7 +385,7 @@ class RnXprinterModule(reactContext: ReactApplicationContext) :
   fun printBitmap(instanceId: String, bitmapData: String, alignment: Int, width: Int, model: Int) {
     val instance = getInstance(instanceId)
     val printer = instance.posPrinter ?: throw Exception("No printer connection for instance $instanceId")
-    
+
     val decodedString: ByteArray = Base64.decode(bitmapData, Base64.DEFAULT)
     val decodedByte = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.size)
     printer.initializePrinter()
