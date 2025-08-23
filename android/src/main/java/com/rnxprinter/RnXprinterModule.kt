@@ -64,15 +64,13 @@ class RnXprinterModule(reactContext: ReactApplicationContext) :
   @ReactMethod
   fun getUsbDevices(promise: Promise) {
     try {
-      val listDevice = POSConnect.getUsbDevice(reactApplicationContext)
+      val listDevice = POSConnect.getUsbDevices(reactApplicationContext)
       val writableArray = Arguments.createArray()
-
       if (listDevice != null) {
         for (device in listDevice) {
-          writableArray.pushString(device.deviceName)
+          writableArray.pushString(device)
         }
       }
-
       promise.resolve(writableArray)
     } catch (ex: Exception) {
       Log.e("XPrinterModule", "getUsbDevices failed --> ${ex.message}")
@@ -205,6 +203,7 @@ class RnXprinterModule(reactContext: ReactApplicationContext) :
       instance.connection!!.connect(ip) { code, connInfo, msg ->
         when (code) {
           POSConnect.CONNECT_SUCCESS -> {
+            Log.e("XPrinterModule", "connectListener.CONNECT_SUCCESS --> $connInfo")
             instance.posPrinter = POSPrinter(instance.connection)
             instance.cpclPrinter = CPCLPrinter(instance.connection)
             instance.zplPrinter = ZPLPrinter(instance.connection)
