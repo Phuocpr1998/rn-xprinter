@@ -1,8 +1,17 @@
 package com.rnxprinter
 
+import android.app.PendingIntent
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.graphics.BitmapFactory
+import android.hardware.usb.UsbDevice
+import android.hardware.usb.UsbManager
+import android.os.Build
 import android.util.Base64
 import android.util.Log
+import androidx.core.content.ContextCompat
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
@@ -33,11 +42,59 @@ data class PrinterInstance(
 class RnXprinterModule(reactContext: ReactApplicationContext) :
   ReactContextBaseJavaModule(reactContext) {
 
+  companion object {
+    const val NAME = "RnXprinter"
+    private const val ACTION_USB_PERMISSION = "com.rnxprinter.USB_PERMISSION"
+  }
+
   // Store instances by instance ID
   private val instances = ConcurrentHashMap<String, PrinterInstance>()
 
   // For backward compatibility with legacy calls
   private val legacyInstance = PrinterInstance()
+
+  // USB permission handling
+  private val usbManager = reactContext.getSystemService(Context.USB_SERVICE) as UsbManager
+  private var pendingUsbPromise: Promise? = null
+  private var pendingInstanceId: String = "legacy"
+
+  // USB permission receiver
+  private val usbReceiver = object : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+      val action = intent.action
+      if (ACTION_USB_PERMISSION == action) {
+        synchronized(this) {
+          val device = intent.getParcelableExtra<UsbDevice>(UsbManager.EXTRA_DEVICE)
+          if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
+            Log.d("XPrinterModule", "USB permission granted for device: ${device?.deviceName}")
+            pendingUsbPromise?.let { promise ->
+              connectToUsbDeviceWithInstance(pendingInstanceId, device?.deviceName ?: "", promise)
+            }
+          } else {
+            Log.e("XPrinterModule", "USB permission denied for device: ${device?.deviceName}")
+            pendingUsbPromise?.reject("-1", "USB permission denied")
+          }
+          pendingUsbPromise = null
+          pendingInstanceId = "legacy"
+        }
+      }
+    }
+  }
+
+  init {
+    // Register USB permission receiver
+    val filter = IntentFilter(ACTION_USB_PERMISSION)
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+      reactContext.registerReceiver(usbReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+    } else {
+      ContextCompat.registerReceiver(
+        reactContext,
+        usbReceiver,
+        filter,
+        ContextCompat.RECEIVER_NOT_EXPORTED
+      )
+    }
+  }
 
   @ReactMethod
   fun createInstance(instanceId: String) {
@@ -61,16 +118,27 @@ class RnXprinterModule(reactContext: ReactApplicationContext) :
     }
   }
 
+
+
   @ReactMethod
   fun getUsbDevices(promise: Promise) {
     try {
+      // Use both methods: original printer library and system USB manager
       val listDevice = POSConnect.getUsbDevices(reactApplicationContext)
       val writableArray = Arguments.createArray()
+
       if (listDevice != null) {
         for (device in listDevice) {
           writableArray.pushString(device)
         }
+      } else {
+        // Fallback to system USB manager if printer library fails
+        val deviceList = usbManager.deviceList
+        for (device in deviceList.values) {
+          writableArray.pushString(device.deviceName)
+        }
       }
+
       promise.resolve(writableArray)
     } catch (ex: Exception) {
       Log.e("XPrinterModule", "getUsbDevices failed --> ${ex.message}")
@@ -146,6 +214,41 @@ class RnXprinterModule(reactContext: ReactApplicationContext) :
 
   @ReactMethod
   fun usbConnect(instanceId: String, device: String, promise: Promise) {
+    try {
+      // First, check if we can find the USB device in the system
+      val deviceList = usbManager.deviceList
+      var targetDevice: UsbDevice? = null
+
+      // Find the device by name
+      for (usbDevice in deviceList.values) {
+        if (usbDevice.deviceName == device || device.contains(usbDevice.deviceName)) {
+          targetDevice = usbDevice
+          break
+        }
+      }
+
+      if (targetDevice != null) {
+        // Check/request USB permission before connecting
+        if (usbManager.hasPermission(targetDevice)) {
+          // Permission already granted, connect directly
+          connectToUsbDeviceWithInstance(instanceId, device, promise)
+        } else {
+          // Request permission first
+          requestUsbPermissionForInstance(targetDevice, instanceId, promise)
+        }
+      } else {
+        // Fallback to original method if device not found in system
+        Log.w("XPrinterModule", "Device not found in system USB list, trying original method")
+        connectToUsbDeviceWithInstance(instanceId, device, promise)
+      }
+    } catch (ex: Exception) {
+      Log.e("XPrinterModule", "usbConnect failed --> ${ex.message}")
+      // Fallback to original method on error
+      connectToUsbDeviceWithInstance(instanceId, device, promise)
+    }
+  }
+
+  private fun connectToUsbDeviceWithInstance(instanceId: String, device: String, promise: Promise) {
     val instance = getInstance(instanceId)
     instance.connection?.close()
 
@@ -190,6 +293,37 @@ class RnXprinterModule(reactContext: ReactApplicationContext) :
     } catch (ex: Exception) {
       Log.e("XPrinterModule", "usbConnect failed --> ${ex.message}")
       promise.reject("-1", ex.message)
+    }
+  }
+
+  private fun requestUsbPermissionForInstance(device: UsbDevice, instanceId: String, promise: Promise) {
+    if (usbManager.hasPermission(device)) {
+      // Permission already granted
+      connectToUsbDeviceWithInstance(instanceId, device.deviceName, promise)
+    } else {
+      // Request permission
+      pendingUsbPromise = promise
+      pendingInstanceId = instanceId
+      val permissionIntent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        // Create explicit intent for Android 14 compatibility
+        val explicitIntent = Intent(ACTION_USB_PERMISSION).apply {
+          setPackage(reactApplicationContext.packageName)
+        }
+        PendingIntent.getBroadcast(
+          reactApplicationContext,
+          0,
+          explicitIntent,
+          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0
+        )
+      } else {
+        PendingIntent.getBroadcast(
+          reactApplicationContext,
+          0,
+          Intent(ACTION_USB_PERMISSION),
+          PendingIntent.FLAG_IMMUTABLE,
+        )
+      }
+      usbManager.requestPermission(device, permissionIntent)
     }
   }
 
@@ -406,9 +540,5 @@ class RnXprinterModule(reactContext: ReactApplicationContext) :
 
   override fun getName(): String {
     return NAME
-  }
-
-  companion object {
-    const val NAME = "RnXprinter"
   }
 }

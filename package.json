@@ -1,6 +1,6 @@
 {
   "name": "rn-xprinter",
-  "version": "2.0.6",
+  "version": "2.0.7",
   "description": "XPrinter SDK for react native",
   "source": "./src/index.tsx",
   "main": "./lib/module/index.js",

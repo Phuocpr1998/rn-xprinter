@@ -1,2 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  
+  <!-- USB permissions for connecting to USB printers -->
+  <uses-permission android:name="android.permission.USB_PERMISSION" />
+  <uses-feature android:name="android.hardware.usb.host" android:required="false" />
+  
 </manifest>
